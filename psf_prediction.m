@@ -1,9 +1,9 @@
 clc,clear
 % make blur
-img = single(imread('G:\\HD160--\\21\\G31.MIM'));
+img = single(imread('G:\\HD160--\\21\\G32.MIM'));
 
 %  PSF 点
-delta = 2;
+delta = 3;
 xc = 6;
 yc = 6;
 xl = 11;
@@ -29,7 +29,7 @@ step_size = 1;
 step_sigma = 1;
 
 
-epoch = 1;
+epoch = 5;
 
 reslut = [];
 temp_result = 0;
@@ -50,7 +50,7 @@ for i = 1:epoch
     % rand * 10
     start_size = seed_size;
     start_sigma = sigma_seed;
-    for j = 1:10
+    for j = 1:15
         [seed_size,sigma_seed] = (rand_seed(size_range,sigma));
         seed_size = round(seed_size);
         sigma_seed = round(sigma_seed);
@@ -59,8 +59,23 @@ for i = 1:epoch
         ifft_img = fft_ifft(img,sigma_num(j),size_num(j));
         temp_result = criter(ifft_img);
         reslut(i) = temp_result;
-        disp(num2str(temp_result))
+        disp(strcat(num2str(temp_result),',size:',num2str(size_num(j)),',sigma:',num2str(sigma_num(j))))
+        record(j,1) = temp_result;
+        record(j,2) = size_num(j);
+        record(j,3) = sigma_num(j);
     end
+    % 获取前30%数据进行均化，重新定义start size and start sigma
+    record1 = sortrows(record,1);
+    record1 = record1(end-round(0.2*size(record1,1)):end,:);
+    record_mean = mean(record1,1);
+
+
+    disp(record_mean);
+    disp(size_range);
+    size_range = [uint8(record_mean(2)-(size_range(2)-size_range(1))*0.3),uint8(record_mean(2)+(size_range(2)-size_range(1))*0.3)];
+
+    sigma = [uint8(record_mean(3)-(sigma(2)-sigma(1))*0.3),uint8(record_mean(3)+(sigma(2)-sigma(1))*0.3)];
+    disp(strcat('epoch:',num2str(i)))
 end
 
 function [seed_size,sigma_seed] = rand_seed(size_range,sigma)
@@ -113,6 +128,6 @@ function ifft_img = fft_ifft(img,sigma,size_n)
 end
 
 function result = criter(img_pred) % or (img_pred,img_gt) for image
-    [temp, ~] =  imgradient(single(img_pred));
+    [temp, ~] =  imgradient(single(img_pred(round(end/2)-200:round(end/2)+200,round(end/2)-200:round(end/2)+200)));
     result = mean(temp(:));
 end
